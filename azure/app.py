@@ -166,34 +166,15 @@ def main():
     st.markdown('<h1 class="main-header">📄 Extractor de Datos de Facturas</h1>', unsafe_allow_html=True)
     st.markdown("---")
 
-    # Sidebar - Información del sistema
+    # Sidebar - Información
     with st.sidebar:
-        st.header("ℹ️ Información del Sistema")
-
-        st.markdown(f"""
-        <div class="info-box">
-        <b>Modelo Azure:</b> prebuilt-invoice<br>
-        <b>Modelo Gemini:</b> {GEMINI_MODEL}<br>
-        <b>Estado:</b> ✅ Activo
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("---")
-
         st.header("📋 Formatos Soportados")
         st.write("- 📷 Imágenes: JPG, JPEG, PNG")
         st.write("- 📄 Documentos: PDF")
 
         st.markdown("---")
 
-        st.header("🔧 Configuración")
-
-        # Opción para mostrar detalles técnicos
-        show_details = st.checkbox("Mostrar detalles técnicos", value=False)
-
-        if show_details:
-            st.code(f"Endpoint: {AZURE_ENDPOINT[:40]}...")
-            st.code(f"API Key: {'*' * 30}")
+        st.info("💡 Arrastra tus facturas o haz clic para seleccionarlas")
 
     # Área principal
     col1, col2 = st.columns([2, 1])
