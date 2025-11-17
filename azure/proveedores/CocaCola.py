@@ -32,9 +32,11 @@ Tabla de productos con columnas:
 | CANTIDAD | CODIGO | PRODUCTO | P.UNITARIO | PRECIO NETO | DESCUENTO | SUBTOTAL | IVA 21% | I.INTERNOS | SUB+TOTAL |
 
 PIE DE FACTURA (buscar fila "IB.DN"):
-- IB_CAP_FED_TOTAL: Primer valor numérico en la zona de IB.DN
-- PERC_RG_3337_TOTAL: Tercer valor numérico en esa zona
-- total_factura: Último valor numérico (IMP.TOTAL)
+- IB_CAP_FED_TOTAL: Primer valor numérico en la zona de IB.DN (buscar texto "IB.CAP.FED")
+- PERC_RG_3337_TOTAL: Tercer valor numérico en esa zona (buscar texto "PERC.RG.3337")
+- invoice_total: IMPORTANTE - Buscar el texto exacto "IMP.TOTAL" seguido de "$" y extraer ese número.
+  Es el ÚLTIMO valor numérico en el pie de la factura, después de todos los impuestos.
+  Ejemplo: "IMP.TOTAL $ 8.708.199,47" → extraer 8708199 (sin decimales)
 
 PASO 1: CÁLCULOS GLOBALES (hacer primero, antes de procesar ítems)
 1. SUMA_NETO_ITEMS = Sumar columna "SUBTOTAL" de todos los artículos
@@ -79,10 +81,18 @@ CASOS ESPECIALES:
 - Mantener orden exacto de aparición
 
 SALIDA:
-JSON con "invoice_total" (total de la factura del pie) y "items" (lista de productos).
-Ejemplo de estructura (con valores ficticios):
+JSON con "invoice_total" y "items".
+
+CRÍTICO - invoice_total:
+- Buscar el texto "IMP.TOTAL" o "IMPORTE TOTAL" en el pie de la factura
+- Es el valor que aparece después de sumar todos los impuestos
+- Está marcado claramente como "IMP.TOTAL $" seguido del número
+- Convertir a entero sin decimales
+- Si no encuentras este valor, busca el último total después de "TRANSFERENCIA BANCO"
+
+Ejemplo de estructura (con valores reales basados en la imagen):
 {
-  "invoice_total": 238358,
+  "invoice_total": 8708199,
   "items": [
     {
       "Codigo": "2843",
