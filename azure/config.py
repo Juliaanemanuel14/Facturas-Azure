@@ -18,7 +18,12 @@ load_dotenv()
 # Detectar si estamos en Streamlit Cloud
 try:
     import streamlit as st
-    RUNNING_ON_STREAMLIT_CLOUD = hasattr(st, 'secrets') and len(st.secrets) > 0
+    # Try to access secrets, if it fails, we're not on cloud
+    try:
+        RUNNING_ON_STREAMLIT_CLOUD = hasattr(st, 'secrets') and len(st.secrets) > 0
+    except Exception:
+        # Si no hay secrets.toml, no estamos en cloud
+        RUNNING_ON_STREAMLIT_CLOUD = False
 except ImportError:
     RUNNING_ON_STREAMLIT_CLOUD = False
 
@@ -153,7 +158,6 @@ def validate_setup() -> None:
 
     if errors:
         raise ConfigurationError("\n\n".join(errors))
-
 
 # =========================
 # LOGGING CONFIGURATION
