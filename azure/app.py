@@ -178,6 +178,47 @@ st.markdown("""
         box-shadow: 0 6px 12px rgba(0,61,165,0.4) !important;
         transform: translateY(-2px) !important;
     }
+    .julio-header {
+        font-size: 2.8rem;
+        color: #FF6B00;
+        text-align: center;
+        margin-bottom: 2rem;
+        font-weight: 900;
+        text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+        letter-spacing: 1px;
+    }
+    .julio-box {
+        background: linear-gradient(135deg, #FF6B00 0%, #FF8533 50%, #FFA366 100%);
+        padding: 2rem;
+        border-radius: 1.2rem;
+        color: white;
+        margin: 1.5rem 0;
+        box-shadow: 0 6px 12px rgba(255,107,0,0.3);
+    }
+    .julio-box h3 {
+        color: white !important;
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 900;
+    }
+    .julio-box p {
+        color: white !important;
+        margin: 0.8rem 0 0 0;
+        font-size: 1.1rem;
+    }
+    .julio-button button {
+        background: linear-gradient(135deg, #FF6B00 0%, #FF8533 100%) !important;
+        color: white !important;
+        font-weight: 900 !important;
+        border: none !important;
+        font-size: 1.1rem !important;
+        padding: 1rem 1.5rem !important;
+    }
+    .julio-button button:hover {
+        background: linear-gradient(135deg, #FF8533 0%, #CC5500 100%) !important;
+        box-shadow: 0 6px 12px rgba(255,107,0,0.4) !important;
+        transform: translateY(-2px) !important;
+    }
     div[data-testid="stMetricValue"] {
         font-size: 1.8rem;
         font-weight: bold;
@@ -470,6 +511,36 @@ def extract_items_quilmes(file_bytes: bytes, filename: str) -> Dict:
         raise ValueError(f"Error al parsear respuesta de IA: {str(je)}")
     except Exception as e:
         logger.error(f"Error en extracción Quilmes: {e}", exc_info=True)
+        raise e
+
+
+def extract_items_julio(file_bytes: bytes, filename: str) -> Dict:
+    """
+    Extrae datos de facturas usando el módulo de Julio (PyMuPDF).
+
+    Args:
+        file_bytes: Contenido del archivo PDF
+        filename: Nombre del archivo
+
+    Returns:
+        Dict con los datos extraídos de la factura
+    """
+    try:
+        # Cargar módulo de Julio
+        julio_module = importlib.import_module("proveedores.julio")
+        parse_factura = getattr(julio_module, "parse_factura")
+
+        logger.info(f"Procesando factura Julio: {filename}")
+
+        # Procesar factura
+        datos = parse_factura(file_bytes, filename)
+
+        logger.info(f"Extracción exitosa de factura Julio")
+
+        return datos
+
+    except Exception as e:
+        logger.error(f"Error en extracción Julio: {e}", exc_info=True)
         raise e
 
 
@@ -1409,6 +1480,265 @@ def render_quilmes_tab():
             """)
 
 
+def render_julio_tab():
+    """Renderiza la pestaña especializada de Facturas Julio."""
+
+    st.markdown('<h1 class="julio-header">📄 FACTURAS JULIO</h1>', unsafe_allow_html=True)
+
+    # Banner informativo
+    st.markdown("""
+    <div class="julio-box">
+        <h3>🎯 Extracción de Facturas con Formato Específico</h3>
+        <p>
+        Sistema especializado para procesar facturas con estructura de AFIP.<br>
+        Extrae 13 campos incluyendo datos del emisor, receptor, punto de venta,
+        comprobante y desglose completo de IVA por alícuota.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("---")
+
+    # Información en sidebar
+    with st.sidebar:
+        st.header("📋 Campos Extraídos (13)")
+
+        with st.expander("📦 Datos de Factura", expanded=True):
+            st.markdown("""
+            - Archivo PDF
+            - Razón Social (Emisor)
+            - Punto de Venta
+            - Comp. Nro
+            - Cliente / Razón Social
+            """)
+
+        with st.expander("💰 Importes"):
+            st.markdown("""
+            - Importe Neto Gravado
+            - Importe Otros Tributos
+            - Importe Total
+            """)
+
+        with st.expander("📊 Detalle IVA"):
+            st.markdown("""
+            - IVA 27%
+            - IVA 21%
+            - IVA 10.5%
+            - IVA 5%
+            - IVA 2.5%
+            - IVA 0%
+            """)
+
+    # Área principal
+    col1, col2 = st.columns([2, 1])
+
+    with col1:
+        st.header("📤 Cargar Facturas")
+
+        uploaded_files = st.file_uploader(
+            "Arrastra tus facturas PDF aquí",
+            type=['pdf'],
+            accept_multiple_files=True,
+            help="Soporta archivos PDF con formato AFIP",
+            key="julio_uploader"
+        )
+
+    with col2:
+        st.header("📊 Info de Archivos")
+
+        if uploaded_files:
+            st.metric("Archivos", len(uploaded_files))
+            total_size = sum(f.size for f in uploaded_files) / 1024
+            st.metric("Tamaño Total", f"{total_size:.1f} KB")
+        else:
+            st.info("📂 Sin archivos cargados")
+
+    # Procesar archivos
+    if uploaded_files:
+        st.markdown("---")
+
+        # Botón con estilo Julio
+        col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
+        with col_btn2:
+            st.markdown('<div class="julio-button">', unsafe_allow_html=True)
+            process_button = st.button(
+                f"🚀 PROCESAR {len(uploaded_files)} FACTURA(S)",
+                type="primary",
+                use_container_width=True,
+                key="process_julio"
+            )
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        if process_button:
+            all_facturas = []
+
+            # Barra de progreso
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+
+            for idx, uploaded_file in enumerate(uploaded_files):
+                progress = (idx + 1) / len(uploaded_files)
+                progress_bar.progress(progress)
+                status_text.text(f"Procesando: {uploaded_file.name} ({idx + 1}/{len(uploaded_files)})")
+
+                try:
+                    # Leer bytes
+                    file_bytes = uploaded_file.read()
+
+                    # Procesar
+                    with st.spinner(f"🔍 Analizando {uploaded_file.name}..."):
+                        datos = extract_items_julio(file_bytes, uploaded_file.name)
+
+                    all_facturas.append(datos)
+
+                except Exception as e:
+                    st.error(f"❌ Error en {uploaded_file.name}: {str(e)}")
+                    # Agregar registro de error
+                    all_facturas.append({
+                        "Archivo_PDF": uploaded_file.name,
+                        "Razon_Social": f"ERROR: {str(e)}"
+                    })
+
+            # Limpiar barra de progreso
+            progress_bar.empty()
+            status_text.empty()
+
+            if all_facturas:
+                st.markdown("---")
+                st.success(f"✅ Procesamiento completado: {len(all_facturas)} factura(s) procesadas")
+
+                # Convertir a DataFrame
+                df = pd.DataFrame(all_facturas)
+
+                # Mapeo de columnas más amigable
+                column_mapping = {
+                    'Archivo_PDF': 'Archivo PDF',
+                    'Razon_Social': 'Razón Social',
+                    'Punto_de_Venta': 'Punto de Venta',
+                    'Comp_Nro': 'Comp. Nro',
+                    'Cliente_Razon_Social': 'Cliente / Razón Social',
+                    'Importe_Neto_Gravado': 'Importe Neto Gravado',
+                    'IVA_27': 'IVA 27%',
+                    'IVA_21': 'IVA 21%',
+                    'IVA_10_5': 'IVA 10.5%',
+                    'IVA_5': 'IVA 5%',
+                    'IVA_2_5': 'IVA 2.5%',
+                    'IVA_0': 'IVA 0%',
+                    'Importe_Otros_Tributos': 'Importe Otros Tributos',
+                    'Importe_Total': 'Importe Total'
+                }
+
+                df_display = df.rename(columns=column_mapping)
+
+                # Tabla detallada
+                st.markdown("---")
+                st.subheader("📋 Detalle de Facturas")
+
+                # Formatear números con separador de miles (punto) y decimal (coma)
+                numeric_cols = ['Importe Neto Gravado', 'IVA 27%', 'IVA 21%', 'IVA 10.5%',
+                               'IVA 5%', 'IVA 2.5%', 'IVA 0%', 'Importe Otros Tributos', 'Importe Total']
+
+                for col in numeric_cols:
+                    if col in df_display.columns:
+                        df_display[col] = df_display[col].apply(
+                            lambda x: f"${float(x):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if pd.notna(x) and x != "ERROR" else x
+                        )
+
+                # Mostrar tabla con scroll
+                st.dataframe(
+                    df_display,
+                    use_container_width=True,
+                    height=500
+                )
+
+                # Estadísticas
+                st.markdown("---")
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric("Total Facturas", len(df))
+
+                with col2:
+                    # Calcular suma de importes totales (solo valores numéricos válidos)
+                    total_importe = sum(
+                        float(row['Importe_Total'])
+                        for row in all_facturas
+                        if isinstance(row.get('Importe_Total'), (int, float, str))
+                        and row.get('Importe_Total') != ''
+                        and not str(row.get('Importe_Total')).startswith('ERROR')
+                    )
+                    st.metric("Suma Total", f"${total_importe:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+
+                with col3:
+                    errores = len([f for f in all_facturas if 'ERROR' in str(f.get('Razon_Social', ''))])
+                    st.metric("Errores", errores)
+
+                # Botón de descarga
+                st.markdown("---")
+                st.subheader("💾 Descargar Resultados")
+
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"facturas_julio_{timestamp}.xlsx"
+
+                excel_bytes = create_excel_download(all_facturas, "julio")
+
+                col_dl1, col_dl2, col_dl3 = st.columns([1, 2, 1])
+                with col_dl2:
+                    st.download_button(
+                        label="📥 Descargar Excel Completo",
+                        data=excel_bytes,
+                        file_name=filename,
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        type="primary",
+                        use_container_width=True,
+                        key="download_julio"
+                    )
+
+                st.success(f"✅ Archivo Excel generado: {filename}")
+
+            else:
+                st.warning("⚠️ No se pudieron procesar las facturas")
+
+    else:
+        # Mensaje de bienvenida
+        st.markdown("---")
+
+        col_welcome1, col_welcome2 = st.columns([1, 1])
+
+        with col_welcome1:
+            st.info("👋 ¡Bienvenido al Extractor de Facturas Julio!")
+
+            st.markdown("""
+            ### 🎯 Características:
+
+            - ✅ **13 campos** extraídos automáticamente
+            - ✅ **Procesamiento de PDFs** con formato AFIP
+            - ✅ **Desglose completo de IVA** por alícuota
+            - ✅ **Datos de emisor y receptor**
+            - ✅ **Procesamiento por lotes** de múltiples facturas
+            """)
+
+        with col_welcome2:
+            st.markdown("""
+            ### 📝 Pasos para usar:
+
+            1. **Carga tus facturas** en formato PDF
+            2. **Haz clic** en "Procesar Facturas"
+            3. **Revisa** la tabla con todos los datos extraídos
+            4. **Descarga** el Excel con los resultados
+
+            ### ✅ Formato Esperado:
+
+            Facturas con formato AFIP que incluyan:
+
+            - Página marcada como "ORIGINAL"
+            - Razón Social del emisor
+            - Punto de Venta y Comp. Nro
+            - Datos del cliente
+            - Desglose de IVA por alícuota
+            """)
+
+
 def main():
     """Función principal de la aplicación."""
 
@@ -1418,10 +1748,11 @@ def main():
     st.markdown("---")
 
     # Tabs principales
-    tab1, tab2, tab3 = st.tabs([
+    tab1, tab2, tab3, tab4 = st.tabs([
         "📄 Extractor General",
         "🥤 Coca-Cola FEMSA",
-        "🍺 Quilmes"
+        "🍺 Quilmes",
+        "📄 Facturas Julio"
     ])
 
     with tab1:
@@ -1432,6 +1763,9 @@ def main():
 
     with tab3:
         render_quilmes_tab()
+
+    with tab4:
+        render_julio_tab()
 
     # Footer
     st.markdown("---")
