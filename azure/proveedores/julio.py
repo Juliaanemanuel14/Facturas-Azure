@@ -103,14 +103,26 @@ def parse_factura(pdf_bytes: bytes, filename: str) -> Dict[str, str]:
         datos["Comp_Nro"] = ""
 
     # Apellido y Nombre / Razón Social (Cliente/Receptor)
-    match_cliente_pos = re.search(r"Apellido\s+y\s+Nombre\s+/\s+Raz[oó]n\s+Social:", texto, re.IGNORECASE)
-    if match_cliente_pos:
-        start = match_cliente_pos.end()
-        rest_text = texto[start:start+500]
-        # Buscar un nombre (letras mayúsculas seguidas de más texto)
-        match_nombre = re.search(r"\n([A-Z][A-Z\s\.]+(?:S\.A\.|S\.R\.L\.|S\.A\.S\.))\s*\n", rest_text)
-        if match_nombre:
-            datos["Cliente_Razon_Social"] = _clean(match_nombre.group(1))
+    # El cliente está después de dos CUITs (el segundo CUIT es el del cliente)
+    # Formato: Apellido y Nombre / Razón Social: -> ... -> CUIT1 (emisor) -> CUIT2 (cliente) -> NOMBRE CLIENTE
+    # Buscar todos los CUITs numéricos (11 dígitos sin guiones)
+    cuits = re.findall(r'\b(\d{11})\b', texto)
+
+    # Si hay al menos 2 CUITs, el nombre del cliente está después del segundo CUIT
+    if len(cuits) >= 2:
+        segundo_cuit = cuits[1]
+        # Buscar la posición del segundo CUIT
+        match_segundo_cuit = re.search(rf'\b{segundo_cuit}\b', texto)
+        if match_segundo_cuit:
+            start = match_segundo_cuit.end()
+            rest_text = texto[start:start+300]
+            # El nombre del cliente está en la siguiente línea que contiene letras (no es una etiqueta)
+            # Puede ser formato "2006 S.A." o "ARRIBOS S.A." o nombres sin sufijo
+            match_nombre = re.search(r'\n\s*([A-Z0-9][A-Z0-9\s\.]+(?:S\.A\.|S\.R\.L\.|S\.A\.S\.|[A-Z\.]+))\s*\n', rest_text)
+            if match_nombre:
+                datos["Cliente_Razon_Social"] = _clean(match_nombre.group(1))
+            else:
+                datos["Cliente_Razon_Social"] = ""
         else:
             datos["Cliente_Razon_Social"] = ""
     else:
