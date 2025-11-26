@@ -18,7 +18,37 @@ pip install -r requirements.txt
 
 ## Uso Básico
 
-### 1. Desde Python
+### Método 1: Normalización con Tabla Auxiliar (RECOMENDADO)
+
+Este método usa un archivo Excel de referencia para normalizar los nombres de productos usando fuzzy matching.
+
+**Paso 1:** Prepara tu tabla auxiliar de normalización con 2 columnas:
+- **Nombre Gestion**: Variantes de nombres (como aparecen en las facturas)
+- **Base**: Nombre normalizado/estandarizado
+
+**Paso 2:** Ejecuta el script:
+
+```python
+from normalizacion.normalizacion_con_auxiliar import normalizar_productos_con_auxiliar
+
+df_normalizado, df_reporte = normalizar_productos_con_auxiliar(
+    archivo_datos="facturas_extraidas.xlsx",
+    archivo_auxiliar="tabla_normalizacion.xlsx",
+    archivo_salida="facturas_normalizadas.xlsx",
+    hoja_datos='Items',
+    hoja_auxiliar='Sheet1',
+    columna_descripcion='Descripcion',
+    columna_variante='Nombre Gestion',
+    columna_base='Base',
+    umbral_similitud=80
+)
+```
+
+**Ver ejemplo completo:** [ejemplo_uso.py](ejemplo_uso.py)
+
+### Método 2: Clustering Automático (Sin tabla de referencia)
+
+Si no tienes una tabla auxiliar, puedes usar clustering automático:
 
 ```python
 from normalizacion.main import normalizar_productos
@@ -33,15 +63,6 @@ df_resultado = normalizar_productos(
     umbrales_clustering=[85, 75, 65, 55]
 )
 ```
-
-### 2. Desde línea de comandos
-
-```bash
-cd normalizacion
-python main.py
-```
-
-**Nota:** Edita las constantes `ARCHIVO_ENTRADA` y `ARCHIVO_SALIDA` en el bloque `if __name__ == "__main__"`.
 
 ## Formato del Archivo de Entrada
 
@@ -142,29 +163,26 @@ El algoritmo está optimizado para grandes volúmenes:
 
 ```
 normalizacion/
-├── __init__.py               # Inicialización del módulo
-├── main.py                   # Script principal (este archivo)
-└── README.md                 # Documentación
+├── __init__.py                        # Inicialización del módulo
+├── main.py                            # Clustering automático (4 niveles)
+├── normalizacion_con_auxiliar.py      # Normalización con tabla de referencia
+├── ejemplo_uso.py                     # Ejemplo de uso simple
+└── README.md                          # Documentación
 ```
 
-### Módulos Internos
+### Módulos Principales
 
-1. **ETL** (`procesar_facturas_con_auditoria`)
-   - Carga de Excel
-   - Parsing de columna concatenada
-   - Rescate numérico
+**normalizacion_con_auxiliar.py** (Normalización con Tabla de Referencia)
+1. `cargar_tabla_auxiliar()` - Carga el Excel con Nombre Gestion -> Base
+2. `normalizar_con_fuzzy_matching()` - Aplica fuzzy matching para normalizar
+3. `generar_reporte_calidad()` - Genera reporte de calidad del matching
+4. `normalizar_productos_con_auxiliar()` - Pipeline completo
 
-2. **Análisis Pareto** (`analisis_pareto`)
-   - Cálculo de frecuencias
-   - Categorización por volumen
-
-3. **Clustering** (`clustering_jerarquico`)
-   - Algoritmo de agrupación en cascada
-   - 4 niveles de abstracción
-
-4. **Pipeline** (`normalizar_productos`)
-   - Orquestación de módulos
-   - Generación de salidas
+**main.py** (Clustering Automático)
+1. `procesar_facturas_con_auditoria()` - ETL, parsing, rescate numérico
+2. `analisis_pareto()` - Cálculo de frecuencias y categorización
+3. `clustering_jerarquico()` - Agrupación en cascada (4 niveles)
+4. `normalizar_productos()` - Pipeline completo
 
 ## Troubleshooting
 
