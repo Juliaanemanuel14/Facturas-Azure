@@ -29,7 +29,7 @@ window.addEventListener('load', async () => {
 
     usernameDisplay.textContent = data.user.username;
     currentUser = data.user.username;
-    document.getElementById('email-destinatario').textContent = 'juliaanemanuel14@gmail.com';
+    document.getElementById('email-destinatario').textContent = 'gastosop10@gmail.com';
 
     // Inicializar multiselect
     initMultiselect();
