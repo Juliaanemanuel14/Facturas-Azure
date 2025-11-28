@@ -444,6 +444,7 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en http://localhost:${PORT}`);
   console.log(`Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Usando Resend para emails`);
 });
 
 // Cerrar conexiones al cerrar el servidor
