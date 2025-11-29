@@ -1,0 +1,50 @@
+# Node
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Environment
+.env
+.env.local
+.env.production
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Otros proyectos - NO INCLUIR EN ESTE REPO
+00- App Liquidaciones/
+00. General/
+01- Arca/
+02- Compulsa_gemini_beta/
+03- Bots/
+AUX EMITIDO RECIBIDO ABRIL.xlsx
+Cloud Run Sentinel/
+Lector de Facturas/
+Liquidaciones de tarjetas/
+Liquidaciones otro codigo/
+PC DE JULIAN/
+Sentinel/
+app cajas*/
+azure*/
+crm-clientes*/
+express-typescript-vercel*/
+formulario-pagos*/
+*.zip
+.claude/
+.devcontainer/
