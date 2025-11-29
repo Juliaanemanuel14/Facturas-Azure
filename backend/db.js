@@ -5,21 +5,30 @@ const isProduction = process.env.NODE_ENV === 'production';
 
 let pool;
 
-if (isProduction) {
-  // Configuración para PostgreSQL en Cloud SQL
+if (process.env.DATABASE_URL) {
+  // Configuración para Railway/Heroku usando DATABASE_URL
+  console.log('📦 Conectado a PostgreSQL via DATABASE_URL');
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: isProduction ? { rejectUnauthorized: false } : false,
+    max: 5,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  });
+} else if (isProduction) {
+  // Configuración para PostgreSQL usando variables individuales
   pool = new Pool({
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    host: process.env.DB_HOST || '/cloudsql/' + process.env.INSTANCE_CONNECTION_NAME,
+    host: process.env.DB_HOST,
     port: process.env.DB_PORT || 5432,
     max: 5,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 5000,
   });
 } else {
-  // Configuración para desarrollo local (puedes usar PostgreSQL local o SQLite)
-  // Para desarrollo, usaremos variables de entorno o valores por defecto
+  // Configuración para desarrollo local
   pool = new Pool({
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASSWORD || 'postgres',
