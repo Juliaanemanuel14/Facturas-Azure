@@ -152,7 +152,7 @@ function renderPagos(pagos) {
       '';
 
     // Determinar si el usuario puede editar el campo OP
-    const canEditOP = currentUser === 'Julian Salvatierra';
+    const canEditOP = currentUser === 'Julian Salvatierra' || currentUser === 'Giuli';
     const opValue = pago.op || '';
 
     let opCell = '';

@@ -17,7 +17,8 @@ app.set('trust proxy', 1);
 const USERS = {
   'Lucas Ortiz': '7894',
   'Julian Salvatierra': '4226',
-  'Matias Huss': '1994'
+  'Matias Huss': '1994',
+  'Giuli': '7531'
 };
 
 // Middleware
