@@ -3,6 +3,8 @@ const express = require('express');
 const session = require('express-session');
 const pgSession = require('connect-pg-simple')(session);
 const { Resend } = require('resend');
+const multer = require('multer');
+const { createClient } = require('@supabase/supabase-js');
 const cors = require('cors');
 const path = require('path');
 const db = require('./db');
@@ -57,6 +59,28 @@ db.initTables().catch(err => {
 
 // Configuración de Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+// Configurar Supabase Storage
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
+
+// Configurar multer para manejar uploads en memoria
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB
+    files: 5
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes'), false);
+    }
+  }
+});
 
 // Middleware de autenticación
 const requireAuth = (req, res, next) => {
@@ -142,9 +166,26 @@ app.get('/api/check-auth', (req, res) => {
 // ===== ENDPOINTS DE PAGOS (PROTEGIDOS) =====
 
 // Endpoint POST para recibir datos del formulario
-app.post('/api/pagos', requireAuth, async (req, res) => {
+app.post('/api/pagos', requireAuth, upload.array('imagenes', 5), async (req, res) => {
   try {
-    const { locales, proveedor, fechaPago, fechaServicio, moneda, concepto, importe, observacion } = req.body;
+    // Extraer datos del body
+    let locales, proveedor, fechaPago, fechaServicio, moneda, concepto, importe, observacion;
+
+    // Si hay archivos, los datos vienen como strings en req.body
+    if (req.files && req.files.length > 0) {
+      locales = JSON.parse(req.body.locales);
+      proveedor = req.body.proveedor;
+      fechaPago = req.body.fechaPago;
+      fechaServicio = req.body.fechaServicio;
+      moneda = req.body.moneda;
+      concepto = req.body.concepto;
+      importe = req.body.importe;
+      observacion = req.body.observacion;
+    } else {
+      // Sin archivos, viene como JSON normal
+      ({ locales, proveedor, fechaPago, fechaServicio, moneda, concepto, importe, observacion } = req.body);
+    }
+
     const usuario = req.session.user.username;
 
     // Validación de campos requeridos
@@ -194,13 +235,49 @@ app.post('/api/pagos', requireAuth, async (req, res) => {
     // Calcular importe por local (dividir el total entre el número de locales)
     const importePorLocal = importeNum / locales.length;
 
+    // Array para almacenar URLs de imágenes subidas
+    const imagenesUrls = [];
+
+    // Subir imágenes a Supabase Storage si existen
+    if (req.files && req.files.length > 0) {
+      console.log(`Subiendo ${req.files.length} imágenes a Supabase Storage...`);
+
+      for (const file of req.files) {
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}-${file.originalname}`;
+        const filePath = `gastos/${fileName}`;
+
+        const { data, error } = await supabase.storage
+          .from(process.env.SUPABASE_STORAGE_BUCKET)
+          .upload(filePath, file.buffer, {
+            contentType: file.mimetype,
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (error) {
+          console.error('Error al subir imagen a Supabase:', error);
+          continue; // Continuar con las demás imágenes
+        }
+
+        // Obtener URL pública
+        const { data: publicData } = supabase.storage
+          .from(process.env.SUPABASE_STORAGE_BUCKET)
+          .getPublicUrl(filePath);
+
+        imagenesUrls.push(publicData.publicUrl);
+        console.log(`Imagen subida exitosamente: ${publicData.publicUrl}`);
+      }
+
+      console.log(`Total de imágenes subidas: ${imagenesUrls.length}`);
+    }
+
     // Array para almacenar los IDs de pagos creados
     const pagoIds = [];
 
-    // Insertar un pago para cada local
+    // Insertar un pago para cada local (incluyendo imagenes)
     const insertPagoSQL = `
-      INSERT INTO pagos (local, proveedor, fecha_pago, fecha_servicio, moneda, concepto, importe, observacion, usuario_registro)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO pagos (local, proveedor, fecha_pago, fecha_servicio, moneda, concepto, importe, observacion, usuario_registro, imagenes)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING id
     `;
 
@@ -214,7 +291,8 @@ app.post('/api/pagos', requireAuth, async (req, res) => {
         concepto,
         importePorLocal,
         observacion || '',
-        usuario
+        usuario,
+        imagenesUrls.length > 0 ? imagenesUrls : null  // Guardar array de URLs
       ]);
 
       const pagoId = result.rows[0].id;
@@ -248,6 +326,23 @@ app.post('/api/pagos', requireAuth, async (req, res) => {
 
     // Generar asunto del email
     const asunto = `Presupuesto ${proveedor} - Periodo: ${mesServicio} ${añoServicio} - Local: ${locales.join(', ')}`;
+
+    // Agregar imágenes al email si existen
+    let imagenesHTML = '';
+    if (imagenesUrls.length > 0) {
+      imagenesHTML = `
+        <h3 style="color: #4f46e5; margin-top: 30px; margin-bottom: 15px;">Imágenes Adjuntas</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-top: 16px;">
+          ${imagenesUrls.map(url => `
+            <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <a href="${url}" target="_blank" style="display: block;">
+                <img src="${url}" alt="Imagen del gasto" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+              </a>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
 
     // Preparar HTML del email
     const htmlContent = `
@@ -311,6 +406,8 @@ app.post('/api/pagos', requireAuth, async (req, res) => {
             <td style="padding: 12px; border: 1px solid #e5e7eb;">${observacion}</td>
           </tr>` : ''}
         </table>
+
+        ${imagenesHTML}
 
         <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
 

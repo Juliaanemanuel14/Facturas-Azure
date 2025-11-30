@@ -16,6 +16,11 @@ let currentUser = null;
 // Variables para multiselect
 let selectedLocales = [];
 
+// Variables para imágenes
+let selectedImages = [];
+const MAX_IMAGES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 // Verificar autenticación al cargar
 window.addEventListener('load', async () => {
   try {
@@ -92,6 +97,67 @@ function updateSelectedLocales() {
 
 function getSelectedLocales() {
   return selectedLocales;
+}
+
+// Funciones para manejo de imágenes
+document.getElementById('imagenes').addEventListener('change', handleImageSelection);
+
+function handleImageSelection(event) {
+  const files = Array.from(event.target.files);
+
+  // Validar número máximo de imágenes
+  if (selectedImages.length + files.length > MAX_IMAGES) {
+    alert(`Máximo ${MAX_IMAGES} imágenes permitidas`);
+    return;
+  }
+
+  // Validar cada archivo
+  for (const file of files) {
+    // Validar tamaño
+    if (file.size > MAX_FILE_SIZE) {
+      alert(`La imagen "${file.name}" excede el tamaño máximo de 5MB`);
+      continue;
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      alert(`El archivo "${file.name}" no es una imagen válida`);
+      continue;
+    }
+
+    selectedImages.push(file);
+  }
+
+  updateImagePreview();
+  event.target.value = ''; // Reset input
+}
+
+function updateImagePreview() {
+  const preview = document.getElementById('imagePreview');
+  preview.innerHTML = '';
+
+  selectedImages.forEach((file, index) => {
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const div = document.createElement('div');
+      div.className = 'image-preview-item';
+      div.innerHTML = `
+        <img src="${e.target.result}" alt="Preview ${index + 1}">
+        <button type="button" class="image-preview-item-remove" onclick="removeImage(${index})">
+          ×
+        </button>
+      `;
+      preview.appendChild(div);
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeImage(index) {
+  selectedImages.splice(index, 1);
+  updateImagePreview();
 }
 
 // Función de logout
@@ -300,11 +366,40 @@ async function confirmAndSend() {
   btnLoader.style.display = 'block';
 
   try {
-    const response = await fetch('/api/pagos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(currentFormData)
-    });
+    let response;
+
+    // Si hay imágenes, usar FormData
+    if (selectedImages.length > 0) {
+      const formData = new FormData();
+
+      // Agregar datos del formulario
+      formData.append('locales', JSON.stringify(currentFormData.locales));
+      formData.append('proveedor', currentFormData.proveedor);
+      formData.append('fechaPago', currentFormData.fechaPago);
+      formData.append('fechaServicio', currentFormData.fechaServicio);
+      formData.append('moneda', currentFormData.moneda);
+      formData.append('concepto', currentFormData.concepto);
+      formData.append('importe', currentFormData.importe);
+      formData.append('observacion', currentFormData.observacion || '');
+
+      // Agregar imágenes
+      selectedImages.forEach((image) => {
+        formData.append('imagenes', image);
+      });
+
+      response = await fetch('/api/pagos', {
+        method: 'POST',
+        body: formData
+        // No incluir Content-Type header, FormData lo maneja automáticamente
+      });
+    } else {
+      // Sin imágenes, usar JSON
+      response = await fetch('/api/pagos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentFormData)
+      });
+    }
 
     const data = await response.json();
 
@@ -378,6 +473,10 @@ function resetForm() {
   document.getElementById('concepto').value = '';
   document.getElementById('importe').value = '';
   document.getElementById('observacion').value = '';
+
+  // Limpiar imágenes
+  selectedImages = [];
+  document.getElementById('imagePreview').innerHTML = '';
 
   // Limpiar errores
   document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));

@@ -247,6 +247,25 @@ function renderPagos(pagos) {
         `;
       }
 
+      // Agregar imágenes si existen
+      let imagenesHTML = '';
+      if (pago.imagenes && pago.imagenes.length > 0) {
+        imagenesHTML = `
+          <div style="margin-top: 20px; padding: 16px; background: white; border-radius: 8px;">
+            <h5 style="margin: 0 0 12px 0; color: #4f46e5; font-size: 14px; font-weight: 600;">
+              📷 Imágenes (${pago.imagenes.length}):
+            </h5>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px;">
+              ${pago.imagenes.map(url => `
+                <a href="${url}" target="_blank" style="display: block; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                  <img src="${url}" alt="Imagen del gasto" style="width: 100%; height: 150px; object-fit: cover; display: block;">
+                </a>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }
+
       detailRow.innerHTML = `
         <td colspan="10" style="padding: 0; background-color: #f9fafb;">
           <div class="items-detail-container">
@@ -265,6 +284,7 @@ function renderPagos(pagos) {
                 ${itemsHTML}
               </tbody>
             </table>
+            ${imagenesHTML}
           </div>
         </td>
       `;
