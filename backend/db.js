@@ -111,6 +111,10 @@ async function initTables() {
     CREATE INDEX IF NOT EXISTS IDX_session_expire ON session (expire);
   `;
 
+  const addImagenesColumn = `
+    ALTER TABLE pagos ADD COLUMN IF NOT EXISTS imagenes TEXT[];
+  `;
+
   try {
     await query(createPagosTable);
     console.log('✓ Tabla "pagos" creada o ya existe');
@@ -123,6 +127,10 @@ async function initTables() {
 
     await query(createIndexSessions);
     console.log('✓ Índice de sesiones creado');
+
+    // Migración: Agregar columna imagenes si no existe
+    await query(addImagenesColumn);
+    console.log('✓ Columna "imagenes" agregada o ya existe');
 
     console.log('✅ Base de datos inicializada correctamente');
   } catch (error) {
