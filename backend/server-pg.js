@@ -20,7 +20,8 @@ const USERS = {
   'Lucas Ortiz': '7894',
   'Julian Salvatierra': '4226',
   'Matias Huss': '1994',
-  'Giuli': '7531'
+  'Giuli': '7531',
+  'Lucia Molina': '9632'
 };
 
 // Middleware
