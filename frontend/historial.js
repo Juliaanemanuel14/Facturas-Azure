@@ -702,22 +702,25 @@ function exportToExcel() {
 function formatDateForExcel(dateString) {
   if (!dateString) return '';
 
-  // Si ya es un objeto Date, usarlo directamente
-  let date;
+  // Si ya es un objeto Date, convertirlo a string ISO
   if (dateString instanceof Date) {
-    date = dateString;
-  } else {
-    // PostgreSQL devuelve fechas en formato YYYY-MM-DD
-    // Asegurarse de usar UTC para evitar problemas de zona horaria
-    date = new Date(dateString + 'T00:00:00Z');
+    dateString = dateString.toISOString().split('T')[0];
   }
 
-  // Verificar si la fecha es válida
-  if (isNaN(date.getTime())) return '';
+  // PostgreSQL devuelve fechas en formato YYYY-MM-DD o ISO string
+  // Extraer solo la parte de la fecha (YYYY-MM-DD)
+  const dateOnly = String(dateString).split('T')[0];
 
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const year = date.getUTCFullYear();
+  // Validar que tenga el formato correcto
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) {
+    console.warn('Fecha inválida:', dateString);
+    return '';
+  }
+
+  // Separar año, mes y día
+  const [year, month, day] = dateOnly.split('-');
+
+  // Retornar en formato DD/MM/YYYY
   return `${day}/${month}/${year}`;
 }
 
