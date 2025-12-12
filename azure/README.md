@@ -86,7 +86,7 @@ DRIVE_CREDENTIALS_FILE=credentials/credentials.json
 ### 5. Validar configuración
 
 ```bash
-python config.py
+python config/config.py
 ```
 
 Esto verificará que todas las variables de entorno y archivos necesarios estén configurados correctamente.
@@ -100,12 +100,12 @@ La forma más fácil de usar el sistema es mediante la interfaz web:
 #### Windows:
 ```bash
 # Doble clic en el archivo:
-iniciar_app.bat
+scripts/iniciar_app.bat
 ```
 
 #### Terminal:
 ```bash
-streamlit run app.py
+streamlit run src/app.py
 ```
 
 La aplicación se abrirá automáticamente en tu navegador en `http://localhost:8501`
@@ -121,7 +121,7 @@ La aplicación se abrirá automáticamente en tu navegador en `http://localhost:
 ### 🖥️ Opción 2: Procesamiento masivo desde Google Drive
 
 ```bash
-python analyze_invoice.py
+python src/analyze_invoice.py
 ```
 
 Este script:
@@ -137,13 +137,13 @@ Este script:
 Para probar con un solo archivo desde la terminal:
 
 ```bash
-python test.py ruta/al/archivo.jpg
+python src/test.py ruta/al/archivo.jpg
 ```
 
 O configura `TEST_FILE_PATH` en `.env` y ejecuta:
 
 ```bash
-python test.py
+python src/test.py
 ```
 
 ## 🆚 Comparación de Métodos
@@ -161,34 +161,57 @@ python test.py
 
 ```
 azure/
-├── .env                      # Variables de entorno (NO commitear)
-├── .env.example             # Plantilla de configuración
-├── .gitignore               # Archivos a ignorar en git
-├── config.py                # Configuración centralizada
-├── logger.py                # Sistema de logging
-├── requirements.txt         # Dependencias del proyecto
-├── README.md                # Este archivo
-├── SECURITY.md              # Guía de seguridad
-├── EJECUTAR_APP.md          # Instrucciones para la interfaz web
+├── 📁 src/                          # Código fuente principal
+│   ├── app.py                       # ⭐ Interfaz web visual
+│   ├── analyze_invoice.py           # Script principal (procesamiento masivo)
+│   ├── test.py                      # Script de prueba (archivo individual)
+│   ├── connect_gemini.py            # Conector con Gemini AI
+│   ├── normalizador.py              # Módulo de normalización
+│   └── app_backup.py                # Backup de la app
 │
-├── app.py                   # ⭐ Interfaz web visual (NUEVO)
-├── iniciar_app.bat          # ⭐ Script de inicio Windows (NUEVO)
-├── analyze_invoice.py       # Script principal (procesamiento masivo)
-├── test.py                  # Script de prueba (archivo individual)
-├── connect_gemini.py        # Conector con Gemini AI
+├── 📁 config/                       # Configuración
+│   ├── config.py                    # Configuración centralizada
+│   ├── logger.py                    # Sistema de logging
+│   ├── .env.example                 # Plantilla de configuración
+│   └── .streamlit/                  # Configuración de Streamlit
+│       ├── config.toml
+│       └── secrets.toml.example
 │
-├── credentials/             # Credenciales de Google (NO commitear)
-│   └── credentials.json
-│
-├── proveedores/             # Plugins por proveedor
+├── 📁 proveedores/                  # Plugins por proveedor (30 archivos)
 │   ├── __init__.py
-│   ├── ejemplo_proveedor.py
+│   ├── ajo.py
+│   ├── arcucci.py
 │   └── ...
 │
-├── temp/                    # Archivos temporales (generado automáticamente)
+├── 📁 normalizacion/                # Módulo de normalización avanzada
+│   ├── __init__.py
+│   ├── main.py
+│   ├── normalizacion_con_auxiliar.py
+│   ├── ejemplo_uso.py
+│   └── README.md
 │
-└── logs/                    # Logs de procesamiento
-    └── processing.log
+├── 📁 docs/                         # Documentación
+│   ├── DEPLOY_STREAMLIT.md         # Guía de despliegue
+│   ├── EJECUTAR_APP.md             # Instrucciones de uso
+│   ├── GUIA_RAPIDA.md              # Guía rápida
+│   ├── LIMPIAR_REPOSITORIO.md      # Limpieza del repo
+│   ├── RECOMENDACIONES_NORMALIZACION.md  # Normalización
+│   └── SECURITY.md                 # Seguridad
+│
+├── 📁 scripts/                      # Scripts auxiliares
+│   └── iniciar_app.bat             # ⭐ Script de inicio Windows
+│
+├── 📁 credentials/                  # Credenciales (NO commitear)
+│   └── credentials.json
+│
+├── 📁 temp/                         # Archivos temporales
+├── 📁 logs/                         # Logs de procesamiento
+│
+├── .env                             # Variables de entorno (NO commitear)
+├── .gitignore                       # Archivos a ignorar
+├── requirements.txt                 # Dependencias
+├── README.md                        # Este archivo
+└── tabla_normalizacion.xlsx         # Tabla auxiliar de normalización
 ```
 
 ## 🔌 Sistema de Plugins de Proveedores
