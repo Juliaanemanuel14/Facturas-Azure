@@ -7,7 +7,9 @@ Sistema de logging centralizado para el proyecto de extracción de facturas.
 import logging
 import logging.config
 from typing import Dict, List, Optional
-from config import LOGGING_CONFIG
+import config.config as cfg
+
+LOGGING_CONFIG = cfg.LOGGING_CONFIG
 
 
 def setup_logging() -> None:

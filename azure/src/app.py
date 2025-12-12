@@ -26,24 +26,23 @@ from azure.ai.formrecognizer import DocumentAnalysisClient
 from azure.core.credentials import AzureKeyCredential
 
 # Importar módulos del proyecto
-import sys
-from pathlib import Path
-# Agregar el directorio raíz y config al path
+# Agregar el directorio raíz al path
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir))
-sys.path.insert(0, str(root_dir / "config"))
 
-from config.config import (
-    AZURE_ENDPOINT,
-    AZURE_KEY,
-    GEMINI_API_KEY,
-    GEMINI_MODEL,
-    ALLOWED_MIME_TYPES,
-)
-from config.logger import get_logger
+import config.config as cfg
+import config.logger as logging_module
 from src.connect_gemini import model
 from src.test import _unwrap_azure_num
 from src.normalizador import normalizar_dataframe, mostrar_estadisticas_normalizacion, agregar_variantes_a_tabla
+
+# Extraer configuraciones
+AZURE_ENDPOINT = cfg.AZURE_ENDPOINT
+AZURE_KEY = cfg.AZURE_KEY
+GEMINI_API_KEY = cfg.GEMINI_API_KEY
+GEMINI_MODEL = cfg.GEMINI_MODEL
+ALLOWED_MIME_TYPES = cfg.ALLOWED_MIME_TYPES
+get_logger = logging_module.get_logger
 
 # Configurar logger
 logger = get_logger(__name__)

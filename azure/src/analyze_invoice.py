@@ -24,37 +24,38 @@ from azure.core.credentials import AzureKeyCredential
 # Agregar el directorio raíz al path
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir))
-sys.path.insert(0, str(root_dir / "config"))
 
 # === Gemini (tu conector) ===
 from src.connect_gemini import model
 
 # === Configuración centralizada ===
-from config.config import (
-    AZURE_ENDPOINT,
-    AZURE_KEY,
-    SKIP_AZURE,
-    DRIVE_FOLDER_ID,
-    DRIVE_CREDENTIALS_FILE,
-    DRIVE_SCOPES,
-    ALLOWED_MIME_TYPES,
-    MAX_ITEMS_DISPLAY,
-    SLEEP_BETWEEN_FILES,
-    CALCULATION_TOLERANCE,
-    OUTPUT_FILE,
-    GEMINI_TEMPERATURE,
-    GEMINI_MAX_TOKENS,
-    validate_setup
-)
-from config.logger import (
-    get_logger,
-    log_items_summary,
-    log_processing_start,
-    log_processing_complete,
-    log_error,
-    log_config_warning,
-    log_plugin_loaded
-)
+import config.config as cfg
+import config.logger as logging_module
+
+# Extraer configuraciones
+AZURE_ENDPOINT = cfg.AZURE_ENDPOINT
+AZURE_KEY = cfg.AZURE_KEY
+SKIP_AZURE = cfg.SKIP_AZURE
+DRIVE_FOLDER_ID = cfg.DRIVE_FOLDER_ID
+DRIVE_CREDENTIALS_FILE = cfg.DRIVE_CREDENTIALS_FILE
+DRIVE_SCOPES = cfg.DRIVE_SCOPES
+ALLOWED_MIME_TYPES = cfg.ALLOWED_MIME_TYPES
+MAX_ITEMS_DISPLAY = cfg.MAX_ITEMS_DISPLAY
+SLEEP_BETWEEN_FILES = cfg.SLEEP_BETWEEN_FILES
+CALCULATION_TOLERANCE = cfg.CALCULATION_TOLERANCE
+OUTPUT_FILE = cfg.OUTPUT_FILE
+GEMINI_TEMPERATURE = cfg.GEMINI_TEMPERATURE
+GEMINI_MAX_TOKENS = cfg.GEMINI_MAX_TOKENS
+validate_setup = cfg.validate_setup
+
+# Extraer funciones de logging
+get_logger = logging_module.get_logger
+log_items_summary = logging_module.log_items_summary
+log_processing_start = logging_module.log_processing_start
+log_processing_complete = logging_module.log_processing_complete
+log_error = logging_module.log_error
+log_config_warning = logging_module.log_config_warning
+log_plugin_loaded = logging_module.log_plugin_loaded
 
 # Configurar logger
 logger = get_logger(__name__)

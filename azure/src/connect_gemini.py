@@ -4,11 +4,16 @@ from pathlib import Path
 # Agregar el directorio raíz al path
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir))
-sys.path.insert(0, str(root_dir / "config"))
 
 from google.generativeai import configure, GenerativeModel
-from config.config import GEMINI_API_KEY, GEMINI_MODEL
-from config.logger import get_logger
+
+# Import directo desde el módulo config
+import config.config as cfg
+import config.logger as logging_module
+
+GEMINI_API_KEY = cfg.GEMINI_API_KEY
+GEMINI_MODEL = cfg.GEMINI_MODEL
+get_logger = logging_module.get_logger
 
 # Configurar logger
 logger = get_logger(__name__)

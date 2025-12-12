@@ -21,11 +21,14 @@ from azure.core.credentials import AzureKeyCredential
 # Agregar el directorio raíz al path
 root_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(root_dir))
-sys.path.insert(0, str(root_dir / "config"))
 
 # Importar configuración centralizada
-from config.config import AZURE_ENDPOINT, AZURE_KEY
-from config.logger import get_logger
+import config.config as cfg
+import config.logger as logging_module
+
+AZURE_ENDPOINT = cfg.AZURE_ENDPOINT
+AZURE_KEY = cfg.AZURE_KEY
+get_logger = logging_module.get_logger
 
 # Configurar logger
 logger = get_logger(__name__)
